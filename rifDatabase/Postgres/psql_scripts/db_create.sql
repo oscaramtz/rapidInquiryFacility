@@ -76,9 +76,9 @@ $$;
 --
 -- Encrypted postgres and rif40 user passwords
 --
-\set npassword '''XXXX':encrypted_postgres_password''''
+\set npassword '''XXXX':postgres_password''''
 SET rif40.encrypted_postgres_password TO :npassword;
-\set npassword '''XXXX':encrypted_rif40_password''''
+\set npassword '''XXXX':rif40_password''''
 SET rif40.encrypted_rif40_password TO :npassword;
 
 --
@@ -117,12 +117,12 @@ BEGIN
 		ELSIF c2_rec.passwd = SUBSTR(c1_rec.password, 5) THEN
 			RAISE INFO 'db_create.sql() rif40 encrypted password="%"', SUBSTR(c1_rec.password, 5);
 		ELSE
-			RAISE EXCEPTION 'db_create.sql() rif40 encrypted password set in makefile="%" differs from database: "%', 
+			RAISE EXCEPTION 'db_create.sql() rif40 encrypted password set by install script="%" differs from database: "%',
 				SUBSTR(c1_rec.password, 5), c2_rec.passwd;	
 		END IF;
 	END IF;	
 --
--- Check encrypted_postgres_password pareameter
+-- Check encrypted_postgres_password parameter
 --
 	OPEN c1up('rif40.encrypted_postgres_password');
 	FETCH c1up INTO c1_rec;
@@ -136,7 +136,7 @@ BEGIN
 		IF c2_rec.passwd = SUBSTR(c1_rec.password, 5) THEN
 			RAISE INFO 'db_create.sql() postgres encrypted password="%"', SUBSTR(c1_rec.password, 5);
 		ELSE
-			RAISE EXCEPTION 'db_create.sql() postgres encrypted password set in makefile="%" differs from database: "%', 
+			RAISE EXCEPTION 'db_create.sql() postgres encrypted password set by install script="%" differs from database: "%',
 				SUBSTR(c1_rec.password, 5), c2_rec.passwd;	
 		END IF;
 	END IF;		
@@ -146,8 +146,8 @@ BEGIN
 END;
 $$;
 
-SET rif40.encrypted_postgres_password TO :encrypted_postgres_password;
-SET rif40.encrypted_rif40_password TO :encrypted_rif40_password;
+SET rif40.encrypted_postgres_password TO :postgres_password;
+SET rif40.encrypted_rif40_password TO :rif40_password;
 
 --
 -- Check DB version
@@ -156,14 +156,11 @@ DO LANGUAGE plpgsql $$
 DECLARE
 -- PostgreSQL 9.3.5 on x86_64-apple-darwin, compiled by i686-apple-darwin11-llvm-gcc-4.2 (GCC) 4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2336.9.00), 64-bito
 --
+-- Use SELECT current_setting('server_version_num') to get numeric version, which is
+-- better for comparing.
 	c1 CURSOR FOR
-	 	SELECT version() AS version, 
-		SUBSTR(version(), 12, 3)::NUMERIC as major_version, 
-		SUBSTR(version(), 16, position(', ' IN version())-16)::NUMERIC as minor_version;
-	c1a CURSOR FOR
-	 	SELECT version() AS version, 
-		SUBSTR(version(), 12, 3)::NUMERIC as major_version, 
-		SUBSTR(version(), 16, position('on' IN version())-16)::NUMERIC as minor_version;
+	 	SELECT version() AS version,
+	 	current_setting('server_version_num')::NUMERIC as numeric_version;
 	c1_rec RECORD;
 --
 BEGIN
@@ -173,21 +170,14 @@ BEGIN
 		CLOSE c1;
 	EXCEPTION
 		WHEN others THEN 
-			BEGIN
-				OPEN c1a;
-				FETCH c1a INTO c1_rec;
-				CLOSE c1a;
-			EXCEPTION
-				WHEN others THEN 
-				RAISE WARNING 'db_create.sql(): unsupported version() function: %', version();
-				RAISE;
-			END;
+            RAISE WARNING 'db_create.sql(): unsupported version() function: %', version();
+            RAISE;
 	END;
 	--
-	IF c1_rec.major_version < 9.3 THEN
+	IF c1_rec.numeric_version < 90300 THEN
 		RAISE EXCEPTION 'db_create.sql() C902xx: RIF requires Postgres version 9.3 or higher; current version: %',
 			c1_rec.version::VARCHAR;
-	ELSIF c1_rec.major_version = 9.3 AND c1_rec.minor_version < 5 THEN 
+	ELSIF c1_rec.numeric_version < 90305 THEN
 --
 -- Avoid postgis bug: ERROR: invalid join selectivity: 1.000000 
 -- in PostGIS 2.1.1 (fixed in 2.2.1/2.1.2 - to be release May 3rd 2014)
@@ -220,7 +210,7 @@ BEGIN
 	CLOSE c1;
 --
 	IF UPPER(c1_rec.use_plr) = 'XXXX' THEN
-		RAISE EXCEPTION 'db_create.sql() C209xx: No -v use_plr=<use_plr> parameter';	
+		RAISE EXCEPTION 'db_create.sql() C209xx: No -v use_plr=<use_plr> parameter';
 	ELSE
 		RAISE INFO 'db_create.sql() postgres use_plr="%"', SUBSTR(c1_rec.use_plr, 5);
 	END IF;
@@ -249,7 +239,7 @@ BEGIN
 	CLOSE c1;
 --
 	IF UPPER(c1_rec.create_sahsuland_only) = 'XXXX' THEN
-		RAISE EXCEPTION 'db_create.sql() C209xx: No -v create_sahsuland_only=<create_sahsuland_only> parameter';	
+		RAISE EXCEPTION 'db_create.sql() C209xx: No -v create_sahsuland_only=<create_sahsuland_only> parameter';
 	ELSE
 		RAISE INFO 'db_create.sql() postgres create_sahsuland_only="%"', SUBSTR(c1_rec.create_sahsuland_only, 5);
 	END IF;
@@ -580,11 +570,16 @@ $$;
 -- Test user account
 -- 
 \set ntestuser '''XXXX':testuser''''
+\echo ntestuser
 SET rif40.testuser TO :ntestuser;
+\set ntestpassword '''XXXX':newpw''''
+\echo ntestpassword
+SET rif40.testpassword TO :ntestpassword;
 DO LANGUAGE plpgsql $$
 DECLARE
 	c1 CURSOR FOR 
-		SELECT CURRENT_SETTING('rif40.testuser') AS testuser;
+		SELECT CURRENT_SETTING('rif40.testuser') AS testuser,
+		       CURRENT_SETTING('rif40.testpassword') AS testpassword;
 	c2 CURSOR(l_usename VARCHAR) FOR 
 		SELECT * FROM pg_user WHERE usename = l_usename;
 	c1_rec RECORD;
@@ -603,6 +598,7 @@ BEGIN
 		RAISE EXCEPTION 'db_create.sql() C209xx: No -v testuser=<test user account> parameter';	
 	ELSE
 		RAISE INFO 'db_create.sql() test user account parameter="%"', c1_rec.testuser;
+		RAISE INFO 'db_create.sql() test user account parameter="%"', c1_rec.testpassword;
 	END IF;
 	u_name:=LOWER(SUBSTR(CURRENT_SETTING('rif40.testuser'), 5));
 --
@@ -614,15 +610,23 @@ BEGIN
 	IF c2_rec.usename IS NULL THEN
 		RAISE NOTICE 'db_create.sql() C209xx: User account does not exist: %; creating', u_name;	
 		sql_stmt:='CREATE ROLE '||LOWER(SUBSTR(c1_rec.testuser, 5))||
-			' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN NOREPLICATION PASSWORD '''||u_name||'''';
+			' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN NOREPLICATION PASSWORD '''||LOWER(SUBSTR(c1_rec.testpassword, 5))||'''';
 		RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
 		EXECUTE sql_stmt;
-	ELSIF pg_has_role(c2_rec.usename, 'rif_user', 'MEMBER') THEN
-		RAISE INFO 'db_create.sql() user account="%" is a rif_user', c2_rec.usename;
-	ELSIF pg_has_role(c2_rec.usename, 'rif_manager', 'MEMBER') THEN
-		RAISE INFO 'db_create.sql() user account="%" is a rif manager', c2_rec.usename;
 	ELSE
-		RAISE EXCEPTION 'db_create.sql() C209xx: User account: % is not a rif_user or rif_manager', c2_rec.usename;	
+	    RAISE INFO 'db_create.sql() RIF schema user % exists; changing password to encrypted',
+	        c2_rec.usename::VARCHAR;
+		sql_stmt:='ALTER USER '||c2_rec.usename||' ENCRYPTED PASSWORD  '''||LOWER(SUBSTR(c1_rec.testpassword, 5))||'''';
+		RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
+		EXECUTE sql_stmt;
+
+	    IF pg_has_role(c2_rec.usename, 'rif_user', 'MEMBER') THEN
+		    RAISE INFO 'db_create.sql() user account="%" is a rif_user', c2_rec.usename;
+	    ELSIF pg_has_role(c2_rec.usename, 'rif_manager', 'MEMBER') THEN
+		    RAISE INFO 'db_create.sql() user account="%" is a rif manager', c2_rec.usename;
+	    ELSE
+		    RAISE EXCEPTION 'db_create.sql() C209xx: User account: % is not a rif_user or rif_manager', c2_rec.usename;
+	    END IF;
 	END IF;
 --
 	sql_stmt:='GRANT CONNECT ON DATABASE postgres to '||u_name;
@@ -657,8 +661,6 @@ END;
 \c postgres :testuser :pghost
 \echo "Try to connect as rif40. This will fail if if the password file is not setup correctly"
 \c postgres rif40 :pghost
-\echo "Try to connect as notarifuser. This will fail if if the password file is not setup correctly"
-\c postgres notarifuser :pghost
 \echo "Try to re-connect as postgres. This will fail if if the password file is not setup correctly"
 -- Re-connect as postgres
 \c postgres postgres :pghost
@@ -676,7 +678,7 @@ END;
 --
 -- Location of SAHSULAND tablespace
 --
-\set nsahsuland_tablespace_dir '''XXXX':sahsuland_tablespace_dir''''
+\set nsahsuland_tablespace_dir '''XXXX':tablespace_dir''''
 SET rif40.sahsuland_tablespace_dir TO :nsahsuland_tablespace_dir;
 SET rif40.os TO :os;
 
@@ -709,7 +711,7 @@ BEGIN
 -- '
 		RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
 		EXECUTE sql_stmt;
-	ELSIF CURRENT_SETTING('rif40.os') IN ('linux', 'darwin') THEN
+	ELSIF CURRENT_SETTING('rif40.os') IN ('linux', 'darwin', 'macos') THEN
 		RAISE INFO 'db_create.sql() Windows postgres sahsuland_tablespace_dir="%"', 
 				SUBSTR(c1_rec.sahsuland_tablespace_dir, 5);
 		sql_stmt:='SET rif40.sahsuland_tablespace_dir TO '''||
@@ -854,7 +856,7 @@ BEGIN;
 --
 -- Check user is postgres on sahsuland
 --
-\set ECHO OFF
+\set ECHO none
 SET rif40.use_plr TO :use_plr;
 SET rif40.testuser TO :ntestuser;
 DO LANGUAGE plpgsql $$
@@ -926,7 +928,7 @@ BEGIN;
 --
 -- Check user is postgres on sahsuland_empty
 --
-\set ECHO OFF
+\set ECHO none
 SET rif40.use_plr TO :use_plr;
 SET rif40.testuser TO :ntestuser;
 DO LANGUAGE plpgsql $$
@@ -1078,7 +1080,7 @@ BEGIN;
 --
 -- Check user is postgres on sahsuland_dev
 --
-\set ECHO OFF
+--\set ECHO none
 SET rif40.use_plr TO :use_plr;
 SET rif40.testuser TO :ntestuser;
 DO LANGUAGE plpgsql $$

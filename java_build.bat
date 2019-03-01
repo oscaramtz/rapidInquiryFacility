@@ -47,63 +47,22 @@ ECHO ON
 SET PWD=%CD%
 call mvn --version
 
-cd rifGenericLibrary
-call mvn -Dmaven.test.skip=true clean
+call mvn clean
 if %errorlevel% neq 0  (
 	cd %PWD%	
 	exit /b 1
 )
-cd ..\rapidInquiryFacility
-call mvn -Dmaven.test.skip=true clean
+call mvn install
 if %errorlevel% neq 0  (
 	cd %PWD%		
 	exit /b 1
 )
-cd ..\rifServices
-call mvn -Dmaven.test.skip=true clean
-if %errorlevel% neq 0  (	
-	cd %PWD%	
-	exit /b 1
-)
-cd ..\taxonomyServices
-call mvn -Dmaven.test.skip=true clean
-if %errorlevel% neq 0  (
-	cd %PWD%		
-	exit /b 1
-)
-
-cd ..\rifGenericLibrary
-call mvn -Dmaven.test.skip=true install
-if %errorlevel% neq 0  (
-	cd %PWD%		
-	exit /b 1
-)
-cd ..\rapidInquiryFacility
-call mvn -Dmaven.test.skip=true install
-if %errorlevel% neq 0  (
-	cd %PWD%		
-	exit /b 1
-)
-cd ..\rifServices
-call mvn -Dmaven.test.skip=true install
-if %errorlevel% neq 0  (
-	cd %PWD%		
-	exit /b 1
-)
-cd ..\taxonomyServices
-call mvn -Dmaven.test.skip=true install
-if %errorlevel% neq 0  (
-	cd %PWD%		
-	exit /b 1
-)
-cd ..\rifDataLoaderTool
-call mvn -Dmaven.test.skip=true install
-if %errorlevel% neq 0  (
-	cd %PWD%		
-	exit /b 1
-)
-cd ..
 COPY rifServices\target\rifServices.war rifServices.war
+if %errorlevel% neq 0  (
+	cd %PWD%		
+	exit /b 1
+)
+COPY rifWebApplication\target\RIF40.war RIF40.war
 if %errorlevel% neq 0  (
 	cd %PWD%		
 	exit /b 1
@@ -118,14 +77,7 @@ if %errorlevel% neq 0  (
 	cd %PWD%	
 	exit /b 1
 )
-cd rifWebApplication\src\main\webapp\WEB-INF
-"C:\Program Files\7-Zip\7z.exe" a -r ..\..\..\..\..\RIF4.7z *
-if %errorlevel% neq 0  (
-	cd %PWD%		
-	exit /b 1
-)
-cd %PWD%
-"C:\Program Files\7-Zip\7z.exe" l RIF4.7z
+COPY statsService\target\statistics.war statistics.war
 if %errorlevel% neq 0  (	
 	cd %PWD%	
 	exit /b 1

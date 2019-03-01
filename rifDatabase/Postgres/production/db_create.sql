@@ -184,7 +184,7 @@ BEGIN
 		ELSIF c2_rec.rolpassword = c2_rec.encrypted_passwd THEN
 			RAISE INFO 'db_create.sql() rif40 encrypted password="%"', c2_rec.encrypted_passwd;
 		ELSE
-			RAISE EXCEPTION 'db_create.sql() rif40 password set in rif40_database_install.bat="%" differs from database: "%"', 
+			RAISE EXCEPTION 'db_create.sql() rif40 password set in install script="%" differs from database: "%"',
 				c2_rec.encrypted_passwd, c2_rec.rolpassword;	
 		END IF;
 		password:=COALESCE(c2_rec.password, SUBSTR(CURRENT_SETTING('rif40.rif40_password'), 5));
@@ -200,11 +200,11 @@ BEGIN
 			
 	END IF;	
 --
--- Check postgres_password pareameter
+-- Check postgres_password parameter
 --
 	OPEN c1up('rif40.postgres_password');
 	FETCH c1up INTO c1_rec;
-	CLOSE c1up;	
+	CLOSE c1up;
 	IF UPPER(c1_rec.password) = 'XXXX' THEN
 		RAISE EXCEPTION 'db_create.sql() C209xx: No -v postgres_password=<postgres_password password> parameter';	
 	ELSE
@@ -220,8 +220,8 @@ BEGIN
 			RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
 			EXECUTE sql_stmt;
 		ELSE
-			RAISE EXCEPTION 'db_create.sql() postgres password set in rif40_database_install.bat="%" differs from database: "%"', 
-				c2_rec.encrypted_passwd, c2_rec.rolpassword;	
+			RAISE EXCEPTION 'db_create.sql() postgres password set in install script="%" differs from database: "%". Unencrypted is %',
+				c2_rec.encrypted_passwd, c2_rec.rolpassword, CURRENT_SETTING('rif40.postgres_password');
 		END IF;
 	END IF;		
 --	
@@ -236,13 +236,8 @@ DECLARE
 -- PostgreSQL 9.3.5 on x86_64-apple-darwin, compiled by i686-apple-darwin11-llvm-gcc-4.2 (GCC) 4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2336.9.00), 64-bito
 --
 	c1 CURSOR FOR
-	 	SELECT version() AS version, 
-		SUBSTR(version(), 12, 3)::NUMERIC as major_version, 
-		SUBSTR(version(), 16, position(', ' IN version())-16)::NUMERIC as minor_version;
-	c1a CURSOR FOR
-	 	SELECT version() AS version, 
-		SUBSTR(version(), 12, 3)::NUMERIC as major_version, 
-		SUBSTR(version(), 16, position('on' IN version())-16)::NUMERIC as minor_version;
+	 	SELECT version() AS version,
+	 	current_setting('server_version_num')::NUMERIC as numeric_version;
 	c1_rec RECORD;
 --
 BEGIN
@@ -252,21 +247,14 @@ BEGIN
 		CLOSE c1;
 	EXCEPTION
 		WHEN others THEN 
-			BEGIN
-				OPEN c1a;
-				FETCH c1a INTO c1_rec;
-				CLOSE c1a;
-			EXCEPTION
-				WHEN others THEN 
-				RAISE WARNING 'db_create.sql(): unsupported version() function: %', version();
-				RAISE;
-			END;
+            RAISE WARNING 'db_create.sql(): unsupported version() function: %', version();
+            RAISE;
 	END;
 	--
-	IF c1_rec.major_version < 9.3 THEN
+	IF c1_rec.numeric_version < 90300 THEN
 		RAISE EXCEPTION 'db_create.sql() C902xx: RIF requires Postgres version 9.3 or higher; current version: %',
 			c1_rec.version::VARCHAR;
-	ELSIF c1_rec.major_version = 9.3 AND c1_rec.minor_version < 5 THEN 
+	ELSIF c1_rec.numeric_version < 90305 THEN
 --
 -- Avoid postgis bug: ERROR: invalid join selectivity: 1.000000 
 -- in PostGIS 2.1.1 (fixed in 2.2.1/2.1.2 - to be release May 3rd 2014)
@@ -627,7 +615,7 @@ BEGIN
 				c2_rec.usename;	
 		ELSIF c4_rec.rolpassword != c4_rec.password THEN
 			RAISE INFO 'rolpassword: "%"', c4_rec.rolpassword;
-			RAISE INFO 'password:    "%"', c4_rec.password;
+			RAISE INFO 'password(%):    "%"', u_pass, c4_rec.password;
 			RAISE EXCEPTION 'db_create.sql() C209xx: User account: % password (%) would change; set password correctly', c2_rec.usename, u_pass;		
 		ELSE
 			RAISE NOTICE 'db_create.sql() C209xx: User account: % password is unchanged', 
@@ -891,27 +879,31 @@ BEGIN
 --
 -- RIF40 grants
 --	
-	sql_stmt:='GRANT ALL ON DATABASE sahsuland to rif40';
+	sql_stmt:='GRANT ALL ON DATABASE '||CURRENT_SETTING('rif40.newdb')||' to rif40';
 	RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
 	EXECUTE sql_stmt;
 	sql_stmt:='REVOKE CREATE ON SCHEMA public FROM rif40';
 	RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
 	EXECUTE sql_stmt;
 --
-	sql_stmt:='GRANT CONNECT ON DATABASE sahsuland to '||u_name;
+	sql_stmt:='GRANT CONNECT ON DATABASE '||CURRENT_SETTING('rif40.newdb')||' to '||u_name;
 	RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
 	EXECUTE sql_stmt;
+
+	sql_stmt:='CREATE SCHEMA IF NOT EXISTS '||u_name||' AUTHORIZATION '||u_name;
+	RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
+	EXECUTE sql_stmt;	
 --
 -- Set default search pathname
 --
-	sql_stmt:='ALTER DATABASE sahsuland SET search_path TO rif40, public, topology, gis, pop, rif_data, data_load, rif40_sql_pkg, rif_studies, rif40_partitions';
+	sql_stmt:='ALTER DATABASE '||CURRENT_SETTING('rif40.newdb')||' SET search_path TO rif40, public, topology, gis, pop, rif_data, data_load, rif40_sql_pkg, rif_studies, rif40_partitions';
 	RAISE INFO 'SQL> %;', sql_stmt::VARCHAR;
 	EXECUTE sql_stmt;
 END;
 $$;
 \set echo ALL
 --
--- End transaction 2: sahsuland build
+-- End transaction 2: newdb build
 --
 END;
 

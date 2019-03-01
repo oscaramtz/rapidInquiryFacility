@@ -1,0 +1,10 @@
+/* CSS FOR RIF Population Pyramid SVG. USER EDITIABLE - COPY TO %CATALINA_HOME%/conf DO NOT USE MULTI LINE COMMENTS */
+:root {
+	--male-color: #c97f82;
+	--female-color: #7f82c9;
+}
+text {
+	font-family: Arial;
+	font-size: 12px;
+	fill: black;
+}

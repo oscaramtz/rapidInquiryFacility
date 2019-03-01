@@ -73,15 +73,19 @@ The basis for this is the performance tests created from the new EHA extract for
 The table has the following standard columns
 
 CREATE TABLE <extract_table> (
- 	year                SMALLINT 	NOT NULL,
-	study_or_comparison	VARCHAR(1) 	NOT NULL,
-	study_id			INTEGER 	NOT NULL,
- 	area_id             VARCHAR 	NOT NULL,
-	band_id				INTEGER,
- 	sex                 SMALLINT,
-    age_group			SMALLINT,
-    ses					VARCHAR(30),
- 	total_pop           DOUBLE PRECISION,
+ 	year            		    SMALLINT 	NOT NULL,
+	study_or_comparison			VARCHAR(1) 	NOT NULL,
+	study_id					INTEGER 	NOT NULL,
+ 	area_id         		    VARCHAR 	NOT NULL,
+	band_id						INTEGER,
+    intersect_count         	INTEGER,         
+    distance_from_nearest_source NUMERIC,  
+    nearest_rifshapepolyid      VARCHAR(30),
+    exposure_value              NUMERIC,
+ 	sex               		  	SMALLINT,
+    age_group					SMALLINT,
+    ses							VARCHAR(30),
+ 	total_pop       		    DOUBLE PRECISION,
 
 One column per distinct covariate
 
@@ -157,15 +161,6 @@ rif40_dll() is run as definer (RIF40) so extract tables are owner by the RIF and
 	DECLARE @index_columns TABLE (column_name VARCHAR(30));
 	DECLARE @pk_index_columns TABLE (column_name VARCHAR(30));
 --		
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('year', 'Year');
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('study_or_comparison', 'Study (S) or comparison (C) area');
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('study_id', 'Study ID');
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('area_id', 'Area ID');
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('band_id', 'Band ID');
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('sex', 'Sex');
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('age_group', 'Age group');
-	INSERT INTO @table_columns(column_name, column_comment) VALUES ('total_pop', 'Total population');
-
 	INSERT INTO @index_columns(column_name) VALUES ('area_id');
 	INSERT INTO @index_columns(column_name) VALUES ('band_id');
 	INSERT INTO @index_columns(column_name) VALUES ('sex');
@@ -265,6 +260,21 @@ rif40_dll() is run as definer (RIF40) so extract tables are owner by the RIF and
 		THROW 55406, @err_msg, 1;
 	END;
 
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('year', 'Year');
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('study_or_comparison', 'Study (S) or comparison (C) area');
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('study_id', 'Study ID');
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('area_id', 'Area ID');
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('band_id', 'Band ID');
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('sex', 'Sex');
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('age_group', 'Age group');
+	INSERT INTO @table_columns(column_name, column_comment) VALUES ('total_pop', 'Total population');
+	IF @c1_rec_study_type != '1' BEGIN /* Risk analysis */
+		INSERT INTO @table_columns(column_name, column_comment) VALUES ('intersect_count', 'Number of intersects with shapes');
+		INSERT INTO @table_columns(column_name, column_comment) VALUES ('distance_from_nearest_source', 'Distance from nearest source (Km)');
+		INSERT INTO @table_columns(column_name, column_comment) VALUES ('nearest_rifshapepolyid', 'Nearest rifshapepolyid (shape reference)');
+		INSERT INTO @table_columns(column_name, column_comment) VALUES ('exposure_value', 'Exposure value (when bands selected by exposure values)');
+	END;
+	
 --
 -- Create extract table
 --
@@ -272,29 +282,42 @@ rif40_dll() is run as definer (RIF40) so extract tables are owner by the RIF and
 -- The table has the following standard columns
 --
 -- CREATE TABLE rif_studies.<extract_table> (
--- 	year                SMALLINT 	NOT NULL,
---	study_or_comparison	VARCHAR(1) 	NOT NULL,
---	study_id			INTEGER 	NOT NULL,
--- 	area_id             VARCHAR 	NOT NULL,
---	band_id				INTEGER 	NOT NULL, /* Risk analysis only */
--- 	sex                 SMALLINT,
--- 	age_group           VARCHAR,
--- 	total_pop           DOUBLE PRECISION,
---  <covariate_name>	VARCHAR(30) NOT NULL	DEFAULT 'No data'
+-- 	year          		      	SMALLINT 	NOT NULL,
+--	study_or_comparison			VARCHAR(1) 	NOT NULL,
+--	study_id					INTEGER 	NOT NULL,
+-- 	area_id      		       	VARCHAR(30) NOT NULL,
+--	band_id						INTEGER 	NOT NULL, /* Risk analysis only */
+--  intersect_count         	INTEGER,         
+--  distance_from_nearest_source NUMERIC, 
+--  nearest_rifshapepolyid      VARCHAR(30),
+--  exposure_value              NUMERIC,
+-- 	sex                 		SMALLINT,
+-- 	age_group           		SMALLINT,
+-- 	total_pop           		DOUBLE PRECISION,
+--  <covariate_name>			VARCHAR(30) NOT NULL	DEFAULT 'No data'
 --
 -- PK disease mapping: year,study_or_comparison,study_id,area_id,sex,age_group,ses
 -- PK risk analysis: year,study_or_comparison,study_id,area_id,sex,age_group,ses
 --
 	SET @sql_stmt='CREATE TABLE rif_studies.' + LOWER(@c1_rec_extract_table) + ' (' + @crlf +
-		 	@tab + 'year                           SMALLINT    	NOT NULL,' + @crlf +
-			@tab + 'study_or_comparison            VARCHAR(1)  	NOT NULL,' + @crlf +
-			@tab + 'study_id                       INTEGER     	NOT NULL,' + @crlf +
- 			@tab + 'area_id                        VARCHAR(30) 	NOT NULL,' + @crlf;
-			
-	IF @c1_rec_study_type != '1' SET @sql_stmt=@sql_stmt + @tab + 
-		'band_id                        INTEGER 		NOT NULL,' + @crlf /* Risk analysis only */
-	ELSE SET @sql_stmt=@sql_stmt + @tab + 
-		'band_id                        INTEGER 		NULL,' + @crlf;
+		 	@tab + 'year                           	SMALLINT    	NOT NULL,' + @crlf +
+			@tab + 'study_or_comparison            	VARCHAR(1)  	NOT NULL,' + @crlf +
+			@tab + 'study_id                       	INTEGER     	NOT NULL,' + @crlf +
+ 			@tab + 'area_id                        	VARCHAR(30) 	NOT NULL,' + @crlf +
+ 			@tab + 'band_id                        	INTEGER 		NULL,' + @crlf;
+	
+	IF @c1_rec_study_type != '1' BEGIN /* Risk analysis */
+		SET @sql_stmt=@sql_stmt +	
+			@tab + 'intersect_count         		INTEGER 		NULL,' + @crlf +
+			@tab + 'distance_from_nearest_source 	NUMERIC 		NULL,' + @crlf +
+			@tab + 'nearest_rifshapepolyid      	VARCHAR(30)		NULL,' + @crlf +
+			@tab + 'exposure_value    	     		NUMERIC 		NULL,' + @crlf;
+	END;
+		
+--	IF @c1_rec_study_type != '1' SET @sql_stmt=@sql_stmt + @tab + 
+--		'band_id                        INTEGER 		NOT NULL,' + @crlf /* Risk analysis only */
+--	ELSE SET @sql_stmt=@sql_stmt + @tab + 
+--		'band_id                        INTEGER 		NULL,' + @crlf;
 	
  	SET @sql_stmt=@sql_stmt + 
 			@tab + 'sex                            SMALLINT 	NOT NULL,' + @crlf +
@@ -308,7 +331,7 @@ rif40_dll() is run as definer (RIF40) so extract tables are owner by the RIF and
 	FETCH NEXT FROM c2_creex INTO @c2_rec_covariate_name;
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-		SET @sql_stmt=@sql_stmt + @tab + LEFT(LOWER(@c2_rec_covariate_name) + REPLICATE(' ',30), 30) + ' VARCHAR(30)	 NOT NULL DEFAULT ''No data'',' + @crlf; 
+		SET @sql_stmt=@sql_stmt + @tab + LEFT(LOWER(@c2_rec_covariate_name) + REPLICATE(' ',30), 30) + ' VARCHAR(30)	 NULL DEFAULT ''No data'',' + @crlf; 
 		INSERT INTO @table_columns(column_name, column_comment) VALUES (@c2_rec_covariate_name, @c2_rec_covariate_name);
 		INSERT INTO @pk_index_columns(column_name) VALUES (@c2_rec_covariate_name);
 --
@@ -480,12 +503,14 @@ rif40_dll() is run as definer (RIF40) so extract tables are owner by the RIF and
 	CLOSE c7_creex;
 	DEALLOCATE c7_creex;
 
-	IF @c1_rec_study_type != '1' SET @sql_frag=@sql_frag + ',band_id'; /* Risk analysis only */
+--	IF @c1_rec_study_type != '1' SET @sql_frag=@sql_frag + ',band_id'; /* Risk analysis only */
 	SET @sql_stmt='ALTER TABLE rif_studies.' + LOWER(@c1_rec_extract_table) + 
 		' ADD CONSTRAINT ' + LOWER(@c1_rec_extract_table) + '_pk PRIMARY KEY (' + @sql_frag + ')';
-		
-	SET @t_ddl=@t_ddl+1;	
-	INSERT INTO @ddl_stmts(sql_stmt) VALUES (@sql_stmt);	
+	
+--
+--  Peter H: 19/1/2018 - disable PK as covariate values may be NULL and NULL is not an allowed PK value!	
+--	SET @t_ddl=@t_ddl+1;	
+--	INSERT INTO @ddl_stmts(sql_stmt) VALUES (@sql_stmt);	
 
 --
 -- Vacuum analyze - raises 25001 "VACUUM cannot run inside a transaction block"

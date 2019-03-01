@@ -1,0 +1,127 @@
+<!--
+/**
+ * The Rapid Inquiry Facility (RIF) is an automated tool devised by SAHSU 
+ * that rapidly addresses epidemiological and public health questions using 
+ * routinely collected health and population data and generates standardised 
+ * rates and relative risks for any given health outcome, for specified age 
+ * and year ranges, for any given geographical area.
+ *
+ * Copyright 2016 Imperial College London, developed by the Small Area
+ * Health Statistics Unit. The work of the Small Area Health Statistics Unit 
+ * is funded by the Public Health England as part of the MRC-PHE Centre for 
+ * Environment and Health. Funding for this project has also been received 
+ * from the United States Centers for Disease Control and Prevention.  
+ *
+ * This file is part of the Rapid Inquiry Facility (RIF) project.
+ * RIF is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * RIF is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with RIF. If not, see <http://www.gnu.org/licenses/>; or write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Boston, MA 02110-1301 USA
+
+ * David Morley
+ * @author dmorley
+ */
+-->
+
+<!--
+HTML partial disease mapping
+-->
+
+<div class="topnav" id="myTopnav" ng-controller="TabCtrl">
+    <div class='logOutUsername' ng-controller="TabCtrl" > 
+        <a ng-click="logout()" id="user" tooltip-class="logoutToolTip" tooltip-placement="right" uib-tooltip="Log out {{username}}"></a> 
+    </div>
+    <a ui-sref="state1" ng-class="{active: $state.includes('state1')}">Study Submission</a>
+    <a ui-sref="state2" ng-class="{active: $state.includes('state2')}">Data Viewer</a>
+    <a ui-sref="state3" ng-class="{active: $state.includes('state3')}">Mapping</a>
+    <a ui-sref="state4" ng-class="{active: $state.includes('state4')}">Export</a>
+    <a style="font-size:15px;" class="icon" ng-click="hamburger()">&#9776;</a>
+</div>
+
+<div id="buttons">
+    <div id='left'>
+        <div class='geoDropsMapping'>
+            <div class="mappingPageLabel">{{studyType['diseasemap1']}}</div>
+            <div>
+                <div>Study:</div>
+                <select ng-change='child.updateSex("diseasemap1")' id='studySelect' ng-model='studyID["diseasemap1"]' ng-options='(s.study_id +        ": " +        s.name) for s in child.studyIDs'> 
+                </select>             
+            </div>
+            <div>
+                <div>Sex:</div>      
+                <select ng-change='child.updateStudy("diseasemap1")' id='optionsSelect' ng-model="sex['diseasemap1']" ng-options="s for s in child.sexes['diseasemap1']">
+                </select>
+            </div>
+            <div id="studyInfo" get-study-info mapid="diseasemap1"></div>
+			<div class="mappingPageAreaName">{{thisPolygon['diseasemap1']}}</div>
+        </div>
+    </div>
+    <div id='right'>
+        <div class='geoDropsMapping'>
+            <div class="mappingPageLabel">{{studyType['diseasemap2']}}</div>
+            <div>
+                <div>Study:</div>
+                <select ng-change='child.updateSex("diseasemap2")' id='studySelect' ng-model='studyID["diseasemap2"]' ng-options='(s.study_id +        ": " +        s.name) for s in child.studyIDs'> 
+                </select>             
+            </div>
+            <div>
+                <div>Sex:</div>      
+                <select ng-change='child.updateStudy("diseasemap2")' id='optionsSelect' ng-model="sex['diseasemap2']" ng-options="s for s in child.sexes['diseasemap2']">
+                </select>
+            </div>
+            <div id="studyInfo" get-study-info mapid="diseasemap2"></div>
+			<div class="mappingPageAreaName">{{thisPolygon['diseasemap2']}}</div>
+        </div>
+    </div>        
+</div>
+
+<div ng-controller="leafletLayersCtrl" ui-layout="{flow : 'column'}">
+    <div ui-layout-container ui-layout-loaded id="vSplit1" max-size="100%" size="{{vSplit1}}%"> 
+        <div ui-layout="{flow : 'row'}">
+            <div ui-layout-container class="leaflet-box" id="hSplit1" max-size="100%" size="{{hSplit1}}%">
+                <div id="diseasemap1"></div>
+            </div>
+            <div ui-layout-container class="rr-back" id="rr1" max-size="100%">   
+                <div ng-show="isDiseaseMappingStudy['diseasemap1']">         
+                    <!--d3 RR chart1 and table data -->
+                    <button type="button" class="d3SaveButton" title="Quick export chart" saved3-chart mapid="diseasemap1"></button>
+                    <rr-zoom id="rrMap1" chart-data="rrChartData['diseasemap1']" options="optionsRR['diseasemap1']" width="currentWidth1" height="currentHeight1"></rr-zoom>           
+                </div>  
+                <div ng-hide="isDiseaseMappingStudy['diseasemap1']">      
+                    <div id="riskGraph3Tooltip"></div>
+                    <button type="button" class="d3SaveButton" title="Quick export chart" saved3-chart mapid="riskGraph3"></button>
+                    <risk-graph3 risk-graph-data="riskGraphData3['diseasemap1']"></risk-graph3> 
+                </div>
+            </div>
+        </div>
+    </div>
+    <div ui-layout-container ui-layout-loaded> 
+        <div ui-layout="{flow : 'row'}">
+            <div ui-layout-container class="leaflet-box" id="hSplit2" max-size="100%" size="{{hSplit2}}%">            
+                <div id="diseasemap2"></div>
+            </div>
+            <div ui-layout-container class="rr-back" id="rr2" max-size="100%">     
+                <div ng-show="isDiseaseMappingStudy['diseasemap2']">       
+                    <!--d3 RR chart2 and table data -->
+                    <button type="button" class="d3SaveButton" title="Quick export chart" saved3-chart mapid="diseasemap2"></button>
+                    <rr-zoom id="rrMap2" chart-data="rrChartData['diseasemap2']" options="optionsRR['diseasemap2']" width="currentWidth2" height="currentHeight2"></rr-zoom>    
+                </div>  
+                <div ng-hide="isDiseaseMappingStudy['diseasemap2']">      
+                    <div id="riskGraph4Tooltip"></div>
+                    <button type="button" class="d3SaveButton" title="Quick export chart" saved3-chart mapid="riskGraph4"></button>
+                    <risk-graph3 risk-graph-data="riskGraphData3['diseasemap2']"></risk-graph3> 
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

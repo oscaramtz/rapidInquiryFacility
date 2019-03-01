@@ -46,50 +46,128 @@
 #
 
 OS?=Unknown
+GRIP=python -m grip
+WGET=wget
+MKDIR=mkdir
 ifeq ($(OS),Windows_NT)
 	MAVEN=mvn
-	7ZIP="C:\Program Files\7-Zip\7z.exe"
 	COPY=cp
 	DELETE=rm -f
+	7ZIP="C:\Program Files\7-Zip\7z.exe"
 else
 #
 # Linux macos support []
 #
 	MAVEN=mvn
-	7ZIP="C:\Program Files\7-Zip\7z.exe"
 	COPY=cp
 	DELETE=rm -f
-$(error 7ZIP unsupported: $(7ZIP))
 endif
+# 
+# Uncomment if you are having problems with the tests
+#
+#MAVEN_FLAGS=-Dmaven.test.skip=true
+MAVEN_FLAGS=
+# or use:
+# make <target> MAVEN_FLAGS='-Dmaven.test.skip=true'
+#
 
-all: rifservice RIF4 taxonomyservice
-
-rifservice: rifServices.war
-rifServices.war:
+all:
 	$(MAVEN) --version
-	cd rifGenericLibrary; $(MAVEN) -Dmaven.test.skip=true install
-	cd rapidInquiryFacility ; $(MAVEN) -Dmaven.test.skip=true install
-	cd rifServices ; $(MAVEN) -Dmaven.test.skip=true install
+	$(MAVEN) $(MAVEN_FLAGS) install
+	$(COPY) taxonomyServices/target/taxonomies.war .
+	$(COPY) rifServices/target/rifServices.war .
+	$(COPY) rifWebApplication/target/RIF40.war .
+	$(COPY) rifDataLoaderTool\target\rifDataLoaderTool-jar-with-dependencies.jar rifDataLoaderTool-jar-with-dependencies.jar
+	$(COPY) statsService/target/statistics.war .
+
+#	$(COPY) rifITGovernanceTool\target\rifITGovernanceTool-jar-with-dependencies.jar rifITGovernanceTool-jar-with-dependencies.jar
+
+#
+# Will now work with Windows 7 (does not understand ";")
+#
+rifservice: 
+	$(MAVEN) --version
+	cd rifGenericLibrary && $(MAVEN) $(MAVEN_FLAGS) install
+	cd rifServices && $(MAVEN) $(MAVEN_FLAGS) install
 	$(COPY) rifServices/target/rifServices.war .
 	
-RIF4: RIF4.7z
-RIF4.7z:
-#	cd rifWebApplication/src/main/webapp/WEB-INF; ls -alR
-	cd rifWebApplication/src/main/webapp/WEB-INF; $(7ZIP) a -r ../../../../../RIF4.7z *
-	$(7ZIP) l RIF4.7z
+RIF40: 
+	$(MAVEN) --version
+	cd rifWebApplication && $(MAVEN) $(MAVEN_FLAGS) install
+	$(COPY) rifWebApplication/target/RIF40.war .
 	
-taxonomyservice: taxonomyServices.war
-taxonomyServices.war:	
-	cd taxonomyServices ; $(MAVEN) -Dmaven.test.skip=true install
-	$(COPY) taxonomyServices/target/taxonomyServices.war .
-	
-install: clean all
+statistics: 
+	$(MAVEN) --version
+	cd statsService && $(MAVEN) $(MAVEN_FLAGS) install
+	$(COPY) statsService/target/statistics.war .
 
+RIF40install: RIF40
+	$(COPY) RIF40.war "$(CATALINA_HOME)/webapps"
+	
+rifserviceinstall: rifservice
+	$(COPY) rifServices.war "$(CATALINA_HOME)/webapps"
+	
+statsServiceInstall: statistics
+	$(COPY) statistics.war "$(CATALINA_HOME)/webapps"
+	
+dataloader: 
+	$(MAVEN) --version
+	cd rifDataLoaderTool && $(MAVEN) $(MAVEN_FLAGS) install
+	$(COPY) rifDataLoaderTool\target\rifDataLoaderTool-jar-with-dependencies.jar rifDataLoaderTool-jar-with-dependencies.jar
+	
+#
+# Not built yet
+#	
+itgovernancetool: 
+	$(MAVEN) --version
+	cd rifITGovernanceTool && $(MAVEN) $(MAVEN_FLAGS) install
+#	$(COPY) rifITGovernanceTool\target\rifITGovernanceTool-jar-with-dependencies.jar rifITGovernanceTool-jar-with-dependencies.jar
+
+# docs: requires wget https://eternallybored.org/misc/wget/ and grep (Windows 10 has grep!)
+broken_links: "docs\broken_links.txt"
+
+"docs\broken_links.txt": 
+	-$(WGET) --spider -r -nd -nv -H -l 2 -w 2 -o "docs\broken_links.log" https://smallareahealthstatisticsunit.github.io/rapidInquiryFacility/
+	-grep -B1 'broken link!' "docs\broken_links.log" > "docs\broken_links.txt"
+	
+# docs: requires wget https://eternallybored.org/misc/wget/ and 7zip
+"$(TMP)\rapidInquiryFacility\docs": 
+	-$(MKDIR) "$(TMP)\rapidInquiryFacility"
+	-$(MKDIR) "$(TMP)\rapidInquiryFacility\docs"
+	
+doc: "$(TMP)\rapidInquiryFacility\docs"
+	$(COPY) "docs\source-documents\RIF_v40_Manual.pdf" "$(TMP)\rapidInquiryFacility\docs\RIF_v40_Manual.pdf"
+	$(COPY) "docs\source-documents\RIF Data Loader Manual.pdf" "$(TMP)\rapidInquiryFacility\docs\RIF_Data_Loader_Manual.pdf"
+	-$(WGET) --mirror --convert-links --page-requisites --no-parent -P "$(TMP)\rapidInquiryFacility\docs" https://smallareahealthstatisticsunit.github.io/rapidInquiryFacility/
+	(cd "$(TMP)\\rapidInquiryFacility\\docs\\smallareahealthstatisticsunit.github.io" && $(7ZIP) a -r "$(TMP)\\rapidInquiryFacility\\docs.7z" "rapidInquiryFacility\\*")
+	$(7ZIP) l "$(TMP)\\rapidInquiryFacility\\docs.7z"
+	
+taxonomyservice:	
+	$(MAVEN) --version
+	cd rifGenericLibrary && $(MAVEN) $(MAVEN_FLAGS) clean
+	cd taxonomyServices && $(MAVEN) $(MAVEN_FLAGS) clean
+	cd rifGenericLibrary && $(MAVEN) $(MAVEN_FLAGS) install
+	cd taxonomyServices && $(MAVEN) $(MAVEN_FLAGS) install
+	$(COPY) taxonomyServices/target/taxonomies.war .
+
+taxonomyserviceinstall: taxonomyservice
+	$(COPY) taxonomies.war "$(CATALINA_HOME)/webapps"
+	
+#
+# Does NOW install RIF40.war
+#	
+install: clean all
+	$(COPY) RIF40.war "$(CATALINA_HOME)/webapps"
+	$(COPY) rifServices.war "$(CATALINA_HOME)/webapps"
+	$(COPY) taxonomies.war "$(CATALINA_HOME)/webapps"
+	$(COPY) statistics.war "$(CATALINA_HOME)/webapps"
+	
 clean: 
-	cd rapidInquiryFacility ; $(MAVEN) clean
-	cd rifGenericLibrary; $(MAVEN) clean
-	cd rifServices; $(MAVEN) clean
-	cd taxonomyServices; $(MAVEN) clean
-	$(DELETE) taxonomyServices.war rifServices.war RIF4.7z
+	$(MAVEN) --version
+	cd rifGenericLibrary && $(MAVEN) $(MAVEN_FLAGS) clean
+	cd taxonomyServices && $(MAVEN) $(MAVEN_FLAGS) clean
+	$(MAVEN) clean
+	$(DELETE) taxonomies.war rifServices.war RIF40.war RIF4.7z
+	
 #
 # Eof

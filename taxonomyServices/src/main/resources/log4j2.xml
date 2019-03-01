@@ -33,18 +33,18 @@
   
   Sets up two loggers:
   
-  1. The default logger: rifGenericLibrary.util.RIFLogger used by the middleware: RIF_middleware.log
-  2. "Other" for logger output not from rifGenericLibrary.util.RIFLogger: Other.log
+  1. The default logger: RIFLogger used by the middleware: RIF_middleware.log
+  2. "Other" for logger output not from RIFLogger: Other.log
   
-  Logs go to STDOUT and ${sys:catalina.base}/log4j2/<YYYY>-<MM>/ and %CATALINA_HOME/log4j2/<YYYY>-<MM>/
+  Logs go to STDOUT and ${env:CATALINA_HOME}/log4j2/<YYYY>-<MM>/ and %CATALINA_HOME/log4j2/<YYYY>-<MM>/
   Other messages go to the console. RIF middleware message DO NOT go to the console so we can find
-  messages not using rifGenericLibrary.util.RIFLogger
+  messages not using RIFLogger
   
   Logs are rotated everyday or every 100 MB in the year/month specific directory
   
   Typical log entry: 
   
-	14:29:37.812 [http-nio-8080-exec-5] INFO  rifGenericLibrary.util.RIFLogger: [rifServices.dataStorageLayer.pg.PGSQLRIFContextManager]:
+	14:29:37.812 [http-nio-8080-exec-5] INFO  RIFLogger: [rifServices.datastorage.pg.PGSQLRIFContextManager]:
 	PGSQLAbstractSQLManager logSQLQuery >>>
 	QUERY NAME: getGeographies
 	PARAMETERS:
@@ -67,16 +67,16 @@
   <Properties>
     <!-- Log file names -->
     <Property name="rif_middleware">RIF_middleware.log</Property>
-    <Property name="other">Other.log</Property>
+    <Property name="taxonomy">Taxonomy.log</Property>
     <Property name="rif_log_pattern">%d{HH:mm:ss.SSS} [%t] %-5level: %msg%n</Property> 
-										<!-- No logging source; always rifGenericLibrary.util.RIFLogger -->
-    <Property name="other_log_pattern">%d{HH:mm:ss.SSS} [%t] %-5level %logger{36}: %msg%n</Property>
+										<!-- No logging source; always RIFLogger -->
+    <Property name="taxonomy_log_pattern">%d{HH:mm:ss.SSS} [%t] %-5level %logger{36}: %msg%n</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT" direct="true">
-      <PatternLayout pattern="${other_log_pattern}"/>
+      <PatternLayout pattern="${taxonomy_log_pattern}"/>
     </Console>
-	<!-- File logs are in ${catalina.base}/log4j2 - %CATALINA_HOME/log4j2 -->
+	<!-- File logs are in ${CATALINA_HOME}/log4j2 - %CATALINA_HOME/log4j2 -->
     <RollingFile name="RIF_middleware" 
 				 filePattern="${sys:catalina.base}/log4j2/$${date:yyyy-MM}/${rif_middleware}-%d{yyyy-MM-dd}-%i.log"
 				 immediateFlush="true" bufferedIO="true" bufferSize="1024">
@@ -86,10 +86,10 @@
 		<SizeBasedTriggeringPolicy size="100 MB"/> <!-- Or every 100 MB -->
 	  </Policies>
     </RollingFile>
-    <RollingFile name="Other" 
-				 filePattern="${sys:catalina.base}/log4j2/$${date:yyyy-MM}/${other}-%d{yyyy-MM-dd}-%i.log"
+    <RollingFile name="Taxonomy"
+				 filePattern="${sys:catalina.base}/log4j2/$${date:yyyy-MM}/${taxonomy}-%d{yyyy-MM-dd}-%i.log"
 				 immediateFlush="false" bufferedIO="true" bufferSize="1024">
-      <PatternLayout pattern="${other_log_pattern}"/>
+      <PatternLayout pattern="${taxonomy_log_pattern}"/>
 	  <Policies>
 		<TimeBasedTriggeringPolicy />              <!-- Rotated everyday -->
 		<SizeBasedTriggeringPolicy size="100 MB"/> <!-- Or every 100 MB -->
@@ -97,16 +97,16 @@
     </RollingFile>
   </Appenders>
   <Loggers>
-    <!-- Default logger: rifGenericLibrary.util.RIFLogger -->
-    <Logger name="rifGenericLibrary.util.RIFLogger" level="info" additivity="false">
-      <!-- Disable the console to check all messages go through rifGenericLibrary.util.RIFLogger -->
+    <!-- Default logger: RIFLogger -->
+    <Logger name="org.sahsu.rif.generic.util.RIFLogger" level="info" additivity="false">
+      <!-- Disable the console to check all messages go through RIFLogger -->
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RIF_middleware"/>
     </Logger>
-	<!-- Other logging -->
+	<!-- Taxonomy logging -->
     <Root level="trace">
       <AppenderRef ref="Console"/>
-      <AppenderRef ref="Other"/>
+      <AppenderRef ref="Taxonomy"/>
     </Root>
   </Loggers>
 </Configuration>

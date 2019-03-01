@@ -1,0 +1,70 @@
+/*
+	I borrowed most of this from https://ehmatthes.github.io/GitHub-Pages-Non-Rubyists/
+*/
+
+a.link-no-style {
+  color: inherit;
+  text-decoration: none;
+}
+
+
+@media screen and (min-width: 64em) {
+  .page-header-subpages {
+    padding: 0.5rem 0.6rem; } }
+
+@media screen and (min-width: 42em) and (max-width: 64em) {
+  .page-header-subpages {
+    padding: 0.3rem 0.4rem; } }
+
+@media screen and (max-width: 42em) {
+  .page-header-subpages {
+    padding: 0.2rem 0.1rem; } }
+
+/* The parent CSS in the Cayman theme is removing all margins at the moment */
+body {
+	margin: 0 10%;
+}
+/* 
+blockquote {
+    display: block;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 40px;
+    margin-inline-end: 40px;
+    color: #6a737d;
+    border-left: 0.25em solid #dfe2e5;
+} 
+*/
+
+table, td, th {
+	border: 1px solid black;
+    padding: 15px;
+}
+th {
+    text-align: left;
+    background-color: #4CAF50;
+    color: white;
+}
+tr:nth-child(even){background-color: #f2f2f2}
+
+
+blockquote {
+  background: #f9f9f9;
+  border-left: 10px solid #ccc;
+  margin: 1.5em 10px;
+  padding: 0.5em 10px;
+  quotes: "\201C""\201D""\2018""\2019";
+  color: #6a737d;
+  border-left: 0.25em solid #dfe2e5;
+}
+blockquote:before {
+  color: #ccc;
+  content: open-quote;
+  font-size: 4em;
+  line-height: 0.1em;
+  margin-right: 0.25em;
+  vertical-align: -0.4em;
+}
+blockquote p {
+  display: inline;
+} 

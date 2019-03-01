@@ -1,0 +1,89 @@
+<!--
+/**
+ * The Rapid Inquiry Facility (RIF) is an automated tool devised by SAHSU 
+ * that rapidly addresses epidemiological and public health questions using 
+ * routinely collected health and population data and generates standardised 
+ * rates and relative risks for any given health outcome, for specified age 
+ * and year ranges, for any given geographical area.
+ *
+ * Copyright 2016 Imperial College London, developed by the Small Area
+ * Health Statistics Unit. The work of the Small Area Health Statistics Unit 
+ * is funded by the Public Health England as part of the MRC-PHE Centre for 
+ * Environment and Health. Funding for this project has also been received 
+ * from the United States Centers for Disease Control and Prevention.  
+ *
+ * This file is part of the Rapid Inquiry Facility (RIF) project.
+ * RIF is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * RIF is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with RIF. If not, see <http://www.gnu.org/licenses/>; or write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Boston, MA 02110-1301 USA
+
+ * David Morley
+ * @author dmorley
+ */
+-->
+
+<!--
+HTML partial export functionality
+-->
+
+<div class="topnav" id="myTopnav" ng-controller="TabCtrl">
+    <div class='logOutUsername' ng-controller="TabCtrl" > 
+        <a ng-click="logout()" id="user" tooltip-class="logoutToolTip" tooltip-placement="right" uib-tooltip="Log out {{username}}"></a> 
+    </div>
+    <a ui-sref="state1" ng-class="{active: $state.includes('state1')}">Study Submission</a>
+    <a ui-sref="state2" ng-class="{active: $state.includes('state2')}">Data Viewer</a>
+    <a ui-sref="state3" ng-class="{active: $state.includes('state3')}">Mapping</a>
+    <a ui-sref="state4" ng-class="{active: $state.includes('state4')}">Export</a>
+    <a style="font-size:15px;" class="icon" ng-click="hamburger()">&#9776;</a>
+</div>
+
+<div id="buttons">
+    <div class='geoDropsMapping'>
+        <div class="mappingPageLabel">STUDY TO EXPORT</div>
+        <div>
+            <div>Study:</div>
+            <select ng-change='updateStudy("exportmap")' id='studySelect' ng-model='studyID["exportmap"]' ng-options='(s.study_id +                       ": " +                       s.name) for s in studyIDs'></select>
+        </div>
+        <div id="studyInfo" get-study-info mapid="exportmap"></div>
+    </div>
+    <a class="mapListButton" id="mapListButtonExport" ng-disabled=disableMapListButton ng-click="exportAllTables()" ng-href="{{ exportURL }}">{{exportTAG}}</a>
+    <a class="mapListButton" ng-controller="ExportSaveCtrl" id='exportSave' ng-click="getBlobJob()" ng-model='studyID["exportmap"]'>Save Completed Study</a>
+</div>
+<div ui-layout="{flow : 'column'}">
+    <div ui-layout-container class="leaflet-box" ui-layout-loaded id="vSplit1" max-size="100%" size="{{vSplit1}}%"> 
+        <div id="exportmap"></div>
+    </div>
+    <div ui-layout-container ui-layout-loaded> 
+        <div ui-layout="{flow : 'row'}">
+            <div ui-layout-container class="leaflet-box" id="hSplit2" max-size="100%" size="{{hSplit1}}%">            
+                <div class ="rowSelectorBar">
+                    <div class ="rowSelectorBarLabel"> Extract Table</div>
+                    <input ng-model="rows['extract'][0]" make-sure-numeric class="rowSelectorNumber">
+                    <input ng-model="rows['extract'][1]" make-sure-numeric class="rowSelectorNumber">
+                    <div class="rowSelectorInputLabel"> Preview Rows</div>
+                    <div class="rowSelectorGo" ng-click="preview('extract')"></div>
+                </div>
+                <div ui-grid="tableOptions['extract']" ui-grid-auto-resize ui-grid-resize-columns class="grid-export"  ng-grid="tableOptions['extract']"></div>
+            </div>
+            <div ui-layout-container class="js-back">
+                <div class ="rowSelectorBar">
+                    <div class ="rowSelectorBarLabel"> Results Table</div>
+                    <input ng-model="rows['results'][0]" make-sure-numeric class="rowSelectorNumber">
+                    <input ng-model="rows['results'][1]" make-sure-numeric class="rowSelectorNumber">
+                    <div class="rowSelectorInputLabel"> Preview Rows</div>
+                    <div class="rowSelectorGo" ng-click="preview('results')"></div>
+                </div>
+                <div ui-grid="tableOptions['results']" ui-grid-auto-resize ui-grid-resize-columns class="grid-export"  ng-grid="tableOptions['results']"></div>
+            </div>
+        </div>

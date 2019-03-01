@@ -141,7 +141,7 @@ WINDOWS_ADMIN_USER?=$(DEFAULT_WINDOWS_ADMIN_USER)
 #
 PSQL=psql
 PSQL_FLAGS=-U $(PSQL_USER) -d $(PGDATABASE) -h $(PGHOST) -w -e -P pager=off \
-	-v testuser=$(TESTUSER) -v verbosity=$(VERBOSITY) -v debug_level=$(DEBUG_LEVEL) -v echo=$(ECHO) \
+	-v testuser=$(TESTUSER) -v testpassword=$(TESTPASSWORD) -v verbosity=$(VERBOSITY) -v debug_level=$(DEBUG_LEVEL) -v echo=$(ECHO) \
 	-v encrypted_postgres_password=$(ENCRYPTED_POSTGRES_PASSWORD) \
 	-v encrypted_rif40_password=$(ENCRYPTED_RIF40_PASSWORD) \
 	-v use_plr=$(USE_PLR) \
@@ -178,6 +178,14 @@ ifeq ($(OS),Windows_NT)
 	ifeq ($(TESTUSER),)
 		TESTUSER=$(USERNAME)
 	endif
+	TESTPASSWORD?=$(CLEAN_USERNAME)
+	ifeq ($(TESTPASSWORD),)
+		TESTPASSWORD=$(USERNAME)
+	endif
+# Causes hangs; does strange things to console!!!
+#	AM_I_ADMIN=$(shell cmd /C .\am_i_admin.bat)
+#	ifeq ($(AM_I_ADMIN),Y)
+#			$(error DO not tun this makefile as an administrator)
 #	TOPOJSON="C:\node_modules\.bin\topojson.cmd"
 	PGPASSFILE=$(APPDATA)\postgresql\pgpass.conf
 else
@@ -345,9 +353,9 @@ sahsuland.sql: ../production/sahsuland.sql
 sahsuland.dump: ../production/sahsuland.dump	
 # make dependent on completed target
 ../production/sahsuland.sql: 
-	pg_dump -U postgres -w -F plain -T '*x_uk*' -T '*.x_ew01*' -v -C sahsuland > ../production/sahsuland.sql
+	pg_dump -U postgres -w -F plain -T '*x_uk*' -T '*.x_ew01*' -N $(TESTUSER) -v -C sahsuland > ../production/sahsuland.sql
 ../production/sahsuland.dump:	
-	pg_dump -U postgres -w -F custom -T '*x_uk*' -T '*.x_ew01*' -v sahsuland > ../production/sahsuland.dump	
+	pg_dump -U postgres -w -F custom -T '*x_uk*' -T '*.x_ew01*' -N $(TESTUSER) -v sahsuland > ../production/sahsuland.dump	
 #- sahsuland_dev_dump: Dump sahsuland_dev database to plain SQL, excluding UK91, EW01 shapefile data from non dev dumps
 #-                     Used to create sahsuland
 sahsuland_dev_dump: ../production/sahsuland_dev.dump 
@@ -355,7 +363,7 @@ sahsuland_dev_dump: ../production/sahsuland_dev.dump
 	pg_dump -U postgres -w -F custom -Z 9 -T '*x_uk*' -T '*.x_ew01*' -v sahsuland_dev > ../production/sahsuland_dev.dump	
 #
 ../production/sahsuland.dump:
-	pg_dump -U postgres -w -F custom -T '*x_uk*' -T '*.x_ew01*' -v sahsuland > ../production/sahsuland.dump		
+	pg_dump -U postgres -w -F custom -T '*x_uk*' -T '*.x_ew01*' -N $(TESTUSER) -v sahsuland > ../production/sahsuland.dump		
 	
 #-
 #- 4. test
@@ -441,7 +449,7 @@ endif
 #	$(MAKE) -C ../Node topojson_convert PGDATABASE=sahsuland
 	$(MAKE) clean v4_0_vacuum_analyse_dev PGDATABASE=sahsuland
 	$(MAKE) -C test_scripts clean all PGDATABASE=sahsuland	
-	$(MAKE) sahsuland.sql
+	$(MAKE) sahsuland.dump
 ifneq ($(OS),Windows_NT)
 ifneq ($(UNAME_S),Darwin)	
 	-$(MAKE) -C ../../ERD dbms_tools
@@ -472,7 +480,7 @@ $(PGPASSFILE):
 $(POSTGRES_ETC_DIR):
 	@echo "Please create $(POSTGRES_ETC_DIR) as root/Administrator"
 psqlrc:	../etc/psqlrc $(POSTGRES_ETC_DIR)
-		-$(COPY) ../etc/psqlrc $(POSTGRES_ETC_DIR)
+		$(COPY) ../etc/psqlrc $(POSTGRES_ETC_DIR)
 #
 # R library directory - need to be created aka POSTGRES_ETC_DIR
 #

@@ -1,0 +1,328 @@
+/**
+ * The Rapid Inquiry Facility (RIF) is an automated tool devised by SAHSU 
+ * that rapidly addresses epidemiological and public health questions using 
+ * routinely collected health and population data and generates standardised 
+ * rates and relative risks for any given health outcome, for specified age 
+ * and year ranges, for any given geographical area.
+ *
+ * Copyright 2016 Imperial College London, developed by the Small Area
+ * Health Statistics Unit. The work of the Small Area Health Statistics Unit 
+ * is funded by the Public Health England as part of the MRC-PHE Centre for 
+ * Environment and Health. Funding for this project has also been received 
+ * from the United States Centers for Disease Control and Prevention.  
+ *
+ * This file is part of the Rapid Inquiry Facility (RIF) project.
+ * RIF is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * RIF is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with RIF. If not, see <http://www.gnu.org/licenses/>; or write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Boston, MA 02110-1301 USA
+
+ * David Morley
+ * @author dmorley
+ */
+
+/* RIF CSS FOR UI-GRID */
+
+.grid {
+    width: 30%;
+    height: 90%;
+    float: left;
+}
+.grid-status {
+    margin: 5px;
+    height: 95%;
+}
+.grid-messages {
+    margin: 5px;
+    height: 95%;
+}
+
+.grid-shapefile { 
+    position: relative;
+    float: right;
+    width: 45%;
+    height: -moz-calc(100% - 150px);
+    /* WebKit */
+
+    height: -webkit-calc(100% - 150px);
+    /* Opera */
+
+    height: -o-calc(100% - 150px);
+    /* Standard */
+
+    height: calc(100% - 150px);
+}
+
+.grid-postalcode { 
+    position: relative;
+    float: right;
+    width: 45%;
+    height: 30%;
+}
+
+.grid-ICD { 
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.grid-ICD .ui-grid-cell-contents{ 
+    -webkit-touch-callout: none; 
+    -webkit-user-select: none;  
+    -khtml-user-select: none;    
+    -moz-user-select: none;      
+    -ms-user-select: none;          
+}
+
+.grid-covariates {
+    width: 90%;
+    position: relative;
+    height: 70%;
+    margin-right: 30px;  
+}
+
+.grid-covariates .ui-grid-row-selected .ui-grid-cell-contents {
+    background-color: #4daf4a;
+    color: white;
+}
+
+.grid-recap {
+    width: 99%;
+    height: 95%;
+    position: inherit;
+    text-transform: uppercase;
+}
+
+.grid-recap .ui-grid-header-cell {
+    text-transform: none;
+}
+
+.grid-expandable {
+    height: 75%;
+}
+.ICDNotSelected .ui-grid-cell-contents {
+    text-transform: uppercase;
+}
+.ICDSelected .ui-grid-cell-contents {
+    background-color: #4daf4a;
+    text-transform: uppercase;   
+    color: white;
+}
+
+.grid-recap .ui-grid-row:hover {
+    background-color: red;
+    color: black;
+}
+
+.ui-grid-canvas {
+    position: relative;
+}
+
+.band1 .ui-grid-cell-contents {
+    background-color: #e41a1c;
+    color: white;
+    opacity: 0.8;
+}
+.band2 .ui-grid-cell-contents {
+    background-color: #377eb8;
+    color: white;
+    opacity: 0.8;
+}
+.band3 .ui-grid-cell-contents {
+    background-color: #4daf4a;
+    color: white;
+    opacity: 0.8;
+}
+.band4 .ui-grid-cell-contents {
+    background-color: #984ea3;
+    color: white;
+    opacity: 0.8;
+}
+.band5 .ui-grid-cell-contents {
+    background-color: #ff7f00;
+    color: white;
+    opacity: 0.8;
+}
+.band6 .ui-grid-cell-contents {
+    background-color: #ffff33;
+    color: #333333;
+    opacity: 0.8;
+}
+
+.ui-grid-row:hover {
+    opacity: 0.7;
+}
+
+.grid-viewer {
+    width: 100%;
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0
+}
+.viewerSelected .ui-grid-cell-contents {
+    background-color: #4daf4a;
+    color: white;
+    opacity: 0.8;
+}
+
+.ui-grid-menu-button {
+    height: 57px;
+    width: 17px;
+}
+
+.ui-grid-column-menu-button{
+    display: none;
+}
+
+/*STATUS REPORT COLOURS*/
+.statusC .ui-grid-cell-contents {
+    background-color: pink;
+    color: black;
+    opacity: 0.8;
+}
+.statusV .ui-grid-cell-contents {
+    background-color: pink;
+    color: black;
+    opacity: 0.8;
+}
+.statusE .ui-grid-cell-contents {
+    background-color: pink;
+    color: black;
+    opacity: 0.8;
+}
+.statusR .ui-grid-cell-contents {
+    /*  background-color: lightgreen;
+      color: black;
+      opacity: 0.8;*/
+}
+
+.statusS .ui-grid-cell-contents {
+    /*  background-color: lightgreen;
+      color: black;
+      opacity: 0.8;*/
+}
+
+.statusF .ui-grid-cell-contents {
+    /*  background-color: lightgreen;
+      color: black;
+      opacity: 0.8;*/
+}
+
+.statusW .ui-grid-cell-contents {
+    /*  background-color: lightgreen;
+      color: black;
+      opacity: 0.8;*/
+}
+
+.statusG .ui-grid-cell-contents {
+    /*  background-color: lightgreen;
+      color: black;
+      opacity: 0.8;*/
+}
+.statusU .ui-grid-cell-contents {
+    background-color: pink;
+    color: black;
+    opacity: 0.8;
+}
+
+.statusINFO .ui-grid-cell-contents {
+    background-color: #0c6997;
+    color: black;
+    opacity: 0.8;
+}
+.statusERROR .ui-grid-cell-contents {
+    background-color: #F64747;
+    color: black;
+    opacity: 0.8;
+}
+.statusWARNING .ui-grid-cell-contents {
+    background-color: #F7CA18;
+    color: black;
+    opacity: 0.8;
+}
+.statusSUCCESS .ui-grid-cell-contents {
+    background-color: #03C9A9;
+    color: black;
+    opacity: 0.8;
+}
+
+table.errorTable {
+    width: 100%;
+}
+table.errorTable td {
+    background-color: white; 
+	border: 1px solid #AAAAAA;
+    padding: 5px;
+    color: black;
+    opacity: 0.8;
+}
+
+/*
+* Export toolbars
+*/
+.rowSelectorBar {
+    width: 100%;
+    height: 40px;
+    background-color: lightgray;
+    overflow: hidden;
+}
+.rowSelectorBarLabel{
+    width: 145px;
+    padding-top: 11px;
+    padding-left: 15px;
+    color: #848484;
+    font-size: 16px;
+    display: inline-block;
+    position: absolute;
+}
+.rowSelectorNumber {
+    width: 90px;
+    height: 20px;
+    margin-left: 160px;
+    margin-top: 10px;
+    background-color: #F2F2F2;
+    border: none;
+    color: #999999;
+    font-size: 12px;
+    display: inline-block;
+}
+.rowSelectorNumber:last-of-type {
+    margin-left: 2px;
+}
+.rowSelectorInputLabel {
+    display: inline-block;
+}
+.rowSelectorGo {
+    width: 18px;
+    height:18px;
+    float: right;
+    margin: 10px;
+    background: transparent url("../images/glyphicon/glyphicons-82-refresh.png") no-repeat;
+    background-size: 100% 100%;
+    opacity: 0.6;
+}
+.rowSelectorGo:hover{
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.grid-export {
+    width: 100%;
+    position:absolute;
+    top:40px;
+    left:0;
+    right:0;
+    bottom:0
+}
+

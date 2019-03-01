@@ -1,0 +1,103 @@
+<!--
+/**
+ * The Rapid Inquiry Facility (RIF) is an automated tool devised by SAHSU 
+ * that rapidly addresses epidemiological and public health questions using 
+ * routinely collected health and population data and generates standardised 
+ * rates and relative risks for any given health outcome, for specified age 
+ * and year ranges, for any given geographical area.
+ *
+ * Copyright 2016 Imperial College London, developed by the Small Area
+ * Health Statistics Unit. The work of the Small Area Health Statistics Unit 
+ * is funded by the Public Health England as part of the MRC-PHE Centre for 
+ * Environment and Health. Funding for this project has also been received 
+ * from the United States Centers for Disease Control and Prevention.  
+ *
+ * This file is part of the Rapid Inquiry Facility (RIF) project.
+ * RIF is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * RIF is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with RIF. If not, see <http://www.gnu.org/licenses/>; or write 
+ * to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Boston, MA 02110-1301 USA
+
+ * David Morley
+ * @author dmorley
+ */
+-->
+
+<!-- 
+HTML partial for ui-router
+Disease submission modal to open shapefile AOI
+-->
+<div class="msettings">
+    <div class="msettings-ct">
+        <div class="msettings-header">
+            <h2>{{modalHeader}}</h2> 
+            <a class="modal_close" ng-click="close()"></a>
+        </div> 
+        <div class="txt-fld">
+            <input on-read-file="screenShapeFile($fileContent)" type="file" name='open file' class='fileOpener' id="setUpFile" accept='{{accept}}' />
+            <md-progress-linear md-mode="indeterminate" ng-show="bProgress"></md-progress-linear>
+        </div>
+
+		<div class="shapefile-box">
+			<div ng-controller="ShapefileSelect">
+			  <div id="shapefileGrid" ng-show="hasGrid" class="grid-shapefile" ng-mouseleave="mouseleave($event)" ui-grid="shapefileGridOptions" ui-grid-resize-columns></br></div>
+			</div>
+				
+			<div class="bnd-fld">
+				<div ng-show="isPolygon && isRiskMapping"> 
+					<h3>Defined polygon extent</h3><br>
+					<input ng-model="selectionMethod" type="radio" ng-value="1" id="byBoundary" ng-change="radioChange(selectionMethod)">
+					<label for="byBoundary">By maximum extent only</label><br>
+					<div ng-show="hasBandAttribute">
+					  <input ng-model="selectionMethod" type="radio" ng-value="2" id="byBand" ng-change="radioChange(selectionMethod)">
+					  <label for="byBand">By "band" attribute in shapefile</label><br>
+					</div>
+					<div ng-show="hasExposureAttributes">
+					  <input ng-model="selectionMethod" type="radio" ng-value="3" id="byAttribute" ng-change="radioChange(selectionMethod)">
+					  <label for="byAttribute">By exposure attribute</label><br>
+					</div>
+				</div>
+
+				<div ng-show="isPolygon && !isRiskMapping"> 
+					<h3>Defined polygon extent</h3><br>
+					<input ng-model="selectionMethod" type="radio" ng-value="1" id="byBoundary" ng-change="radioChange(selectionMethod)">
+					<label for="byBoundary">By maximum extent only</label><br>
+					<div ng-show="hasExposureAttributes">
+					  <input ng-model="selectionMethod" type="radio" ng-value="3" id="byAttribute" ng-change="radioChange(selectionMethod)">
+					  <label for="byAttribute">By exposure attribute</label><br>
+					</div>
+				</div>
+
+				<div ng-show="isPoint">
+					<h3>Circular buffer around points (metres)</h3><br>
+				</div>
+
+				<table ng-show="isTable && isPolygon" id="breakstable">
+					<select ng-show="isTable && isPolygon" id="exposureSelect" ng-model="selectedAttr" ng-change="changedValue(selectedAttr)" ng-options="s for s in attrs" ng-init="selectedAttr"></select>
+					<tr ng-repeat="i in possibleBands track by $index">
+						<td><input class="break" ng-model="bandAttr[$index]"> Lower value for band {{possibleBands[i - 1]}}</td> 
+					</tr>
+				</table>
+				<table ng-show="isTable && isPoint" id="breakstable">
+					<tr ng-repeat="i in possibleBands track by $index">
+						<td><input class="break" ng-model="bandAttr[$index]"> Radius for band {{possibleBands[i - 1]}}</td> 
+					</tr>
+				</table>
+			</div>
+		</div>
+
+        <div class="save-fld">
+            <input type="button" value="Apply" ng-click="submit()" ng-disabled="disableSubmit">
+        </div>
+    </div>
+</div>
